@@ -1,6 +1,6 @@
 """Merges .gjf files for a ligand and receptor and combines them into
 a single file, preparing it for input into Gaussian"""
-class GaussianInputMerger():
+class gaussianInputMerger():
     method = "#P HF/6-31+G* Opt=ModRedundant NoSymm test"
     def __init__(self, interFile, ligFile, method=method):
         # File of the amino acid or non-ligand participant
@@ -34,31 +34,30 @@ class GaussianInputMerger():
                     line = next(lineIter)
                 # If first file add multiplicity. Else go to next line
                 if self.fileNum == 1:
-                    data.append(line)
+                    newF.write(line)
                 line = next(lineIter)
                 # Write atoms to new file until reaching newline
                 # (newline signifies end of atoms in GausView output)
                 while line[0] != '\n':
-                    data.append(line)
+                    newF.write(line)
                     # If not a hydrogen, a fixed atom, so add to fixedAtoms list
                     if line[1] != 'H':
                         self.fixedAtoms.append(self.atomCount)
                     self.atomCount += 1
                     line = next(lineIter)
                     
-        #with open(newFile, 'w') as newF:
-        data = list()
-        data.append(self.method + 2 * '\n')
-        data.append(newFile + 2 * '\n')
-        writeAtoms(self.interFile)
-        writeAtoms(self.ligFile)
-        data.append('\n')
-        for fixedAtom in self.fixedAtoms:
-            data.append(str(fixedAtom) + ' F\n')
+        with open(newFile, 'w') as newF:
+            newF.write(self.method + 2 * '\n')
+            newF.write(newFile + 2 * '\n')
+            writeAtoms(self.interFile)
+            writeAtoms(self.ligFile)
+            newF.write('\n')
+            for fixedAtom in self.fixedAtoms:
+                newF.write(str(fixedAtom) + ' F\n')
 
-        return data
+        return newFile
 
-    def getOutputData(self):
+    def getOutputFile(self):
         '''Returns the name of the combined file'''
         return self.addLigand()
     

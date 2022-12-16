@@ -4,29 +4,21 @@ from tkinter import filedialog as fd # To browse and select files
 import tkinter as tk # To create graphical interface
 from tkinter import ttk # To create tabs in the interface
 from file_read_backwards import FileReadBackwards # Allows to read file backwards in memory-efficient way
+from filenamer import FileNamer # Names files based on input
 from filetextextractor import FileTextExtractor # To extract text from files
 from gaussiantoorca import GaussianToOrca # Translate Gaussian to ORCA file format
-from gaussianInputMerger import GaussianInputMerger # Translates .txt files for an interaction into Gaussian input
+from filevariableextractor import FileVariableExtractor # To get variables for naming convention
 
 class gaussianDataTool():
-    GAUSSIAN = 'Gaussian'
-    ORCA = 'ORCA'
-    PROGRAM_DATA = 'GDTData/GDTData.txt'
-    BORDER_WIDTH = 3
-    HORIZONTAL_PAD = 3
-    VERTICAL_PAD = 3
 
     def __init__(self):
-        '''Initializes the data tool'''
-        self.orcaSaveFileLoc = None
-        self.orcaSaveFileLocIdx = 0
-        self.gausSaveFileLoc = None
-        self.gausSaveFileLocIdx = 1
+        self.PROGRAM_DATA = 'GDTData/GDTData.txt'
+        self.saveFileLoc = None
+        self.saveFileLocIdx = 0
         self.newUser = False
         self.cont = True
-        self.type = None
 
-        # If program's data path doesn't exist, create it
+        # Initialize
         if not os.path.exists(self.PROGRAM_DATA):
             checkPaths()
         else:
@@ -34,115 +26,100 @@ class gaussianDataTool():
         if self.newUser:
             self.promptSaveLoc()
 
-
     def checkPaths(self):
-        '''Checks if data path exists. If not, creates it'''
+        # Initialize paths for data
         programDir = self.PROGRAM_DATA.split('/')[0]
         if not os.path.exists(programDir):
             os.mkdir(programDir)
         open(self.PROGRAM_DATA, 'x').close()
-        # Save the current saveLoc paths
         self.saveData()
-        # Since data file did not exist, definitely a new user
         self.newUser = True
-
-
-    def checkIfNewUser(self):
-        '''Checks if user is a new user based on if they selected
-        a location to save their files for the program being used'''
-        if self.type == self.GAUSSIAN and self.gausSaveFileLoc == None:
-            self.newUser = True
-        elif self.type == self.ORCA and self.orcaSaveFileLoc == None:
-            self.newUser == True
-
-
+            
     def loadData(self):
-        '''Loads previously-saved data from tool's data file'''
         loadList = pickle.load(open(self.PROGRAM_DATA, 'rb'))
-        self.orcaSaveFileLoc = loadList[self.orcaSaveFileLocIdx]
-        # If no save file has been selected, new user
-        if self.orcaSaveFileLoc == None:
+        self.saveFileLoc = loadList[self.saveFileLocIdx]
+        if self.saveFileLoc == None:
             self.newUser = True
 
 
     def saveData(self, saveLocation=None):
-        '''Saves the save locations for the program'''
-        saveList = [self.orcaSaveFileLoc, self.gausSaveFileLoc]
+        saveList = [self.saveFileLoc]
         pickle.dump(saveList, open(self.PROGRAM_DATA, 'wb'))
-   
+        
 
-    def chooseProgram(self):
+    def chooseProgram():
         '''Creates interface for the user to select whether they want
             to create Gaussian or ORCA input files'''
 
         def startGausInput():
-            self.type = self.GAUSSIAN
+            self.gaussInterface()
             window.destroy()
-            self.createInterface()
         def startOrcaInput():
-            self.type = self.ORCA
+            self.orcaInterface()
             window.destroy()
-            self.createInterface()
+        
+        borderWidth = 3
+        horizontalPad = 3
+        verticalPad = 3
         
         window = tk.Tk()
-        frame = tk.Frame(master=window, relief=tk.RAISED, borderwidth=self.BORDER_WIDTH)
+        frame = tk.Frame(master=window, relief=tk.RAISED, borderwidth=borderWidth)
         displayStr = 'Please choose which files you want to make'
+
         disLabel = tk.Label(master=frame, text=displayStr, padx=100, pady=5)
-        frame.grid(row=0, column=1, padx=self.HORIZONTAL_PAD, pady=self.VERTICAL_PAD)
+        frame.grid(row=0, col=1, padx=horizontalPad, pady=verticalPad)
         disLabel.pack()
-        gausIn = tk.Button(master=frame, text='Gaussian Input', command=lambda:startGausInput())
-        frame.grid(row=1, column=0, padx=self.HORIZONTAL_PAD, pady=self.VERTICAL_PAD)
+
+        gausIn = tk.Button(master=frame, text='Gaussian Input')
+        frame.grid(row=1, col=0, padx=horizontalPad, pady=verticalPad)
         gausIn.pack()
-        orcaIn = tk.Button(master=frame, text='ORCA Input', command=lambda:startOrcaInput())
-        frame.grid(row=1, column=3, padx=self.HORIZONTAL_PAD, pady=self.VERTICAL_PAD)
-        orcaIn.pack()
+
+        orcaIn = tk.Button(master=frame, text='ORCA Input')
+        frame.grid(row=1, col=3, padx=horizontalPad, pady=verticalPad)
+        gausIn.pack()
 
         window.mainloop()
 
 
     def createInterface(self):
         """ Creates the main visual interface for the program """        
+        borderWidth = 3
+        horizontalPad = 3
+        verticalPad = 3
+
         self.mainWindow = tk.Tk()
+
         # Make multiple tabs
         tabManager = ttk.Notebook(self.mainWindow)
         tabManager.pack(pady=10, expand=True)
+
         # General Info. Tab
-        genFrame = ttk.Frame(master=tabManager, relief=tk.RAISED, borderwidth=self.BORDER_WIDTH)
+        genFrame = ttk.Frame(master=tabManager, relief=tk.RAISED, borderwidth=borderWidth)
+
         # Make a list of elements in interface to add in order
         genElements = list()
         # Create Label and Button to select files
-        selFileLabel = tk.Label(master=genFrame, text=f"Select the files to create {self.type} input", \
+        selFileLabel = tk.Label(master=genFrame, text="Select the Gaussian files", \
                                 padx=100, pady=5)    
         genElements.append(selFileLabel)
-        if self.type == self.ORCA:
-            selFileDisplay = tk.Label(master=genFrame, text='Selected File(s) will be listed here', padx=100, pady=5)
-            genElements.append(selFileDisplay)
-            selFileButton = tk.Button(master=genFrame, text="Select Files", \
-                                      command=lambda:self.selectFiles(selFileDisplay))
-            genElements.append(selFileButton)
-            startButton = tk.Button(master=genFrame, text="Start", command=self.convertToOrca)
-            genElements.append(startButton)
-        elif self.type == self.GAUSSIAN:
-            interFileDisplay = tk.Label(master=genFrame, text='Amino acid file', padx=100, pady=5)
-            genElements.append(interFileDisplay)
-            interFileBtn = tk.Button(master=genFrame, text='Select Amino Acid File', command=lambda:self.selectFiles(interFileDisplay, interLig='Inter'))
-            genElements.append(interFileBtn)
-            ligFileDisplay = tk.Label(master=genFrame, text='Ligand file', padx=100, pady=5)
-            genElements.append(ligFileDisplay)
-            ligFileBtn = tk.Button(master=genFrame, text='Select Ligand File', command=lambda:self.selectFiles(ligFileDisplay, interLig='Lig'))
-            genElements.append(ligFileBtn)
-            startButton = tk.Button(master=genFrame, text="Start", command=lambda:self.convertToGaussian())
-            genElements.append(startButton)
+        selFileDisplay = tk.Label(master=genFrame, text='Selected File(s)', padx=100, pady=5)
+        genElements.append(selFileDisplay)
+        selFileButton = tk.Button(master=genFrame, text="Select Files", \
+                                  command=lambda:self.selectFiles(selFileDisplay))
+        genElements.append(selFileButton)
+
+        startButton = tk.Button(master=genFrame, text="Start", command=self.convertToOrca)
+        genElements.append(startButton)
         # Add each element in order
         row = 0
         col = 0
         for element in genElements:
-            genFrame.grid(row=row, column=col, padx=self.HORIZONTAL_PAD, pady=self.VERTICAL_PAD)
+            genFrame.grid(row=row, column=col, padx=horizontalPad, pady=verticalPad)
             element.pack()
             row += 1
         # END: General Info. Tab
         # Advanced Tab
-        advFrame = ttk.Frame(master=tabManager, relief=tk.RAISED, borderwidth=self.BORDER_WIDTH)
+        advFrame = ttk.Frame(master=tabManager, relief=tk.RAISED, borderwidth=borderWidth)
         # List of elements for advanced tab
         advElements = list()
         # Create labels and buttons
@@ -158,7 +135,7 @@ class gaussianDataTool():
         row = 0
         col = 0
         for element in advElements:
-            advFrame.grid(row=row, column=col, padx=self.HORIZONTAL_PAD, pady=self.VERTICAL_PAD)
+            advFrame.grid(row=row, column=col, padx=horizontalPad, pady=verticalPad)
             element.pack()
             row += 1
         # Add both tabs to the main window
@@ -177,41 +154,31 @@ class gaussianDataTool():
                 if gaussianStart not in rFile.readline()[:len(gaussianStart)]:
                     return False
         return True
+        
 
-
-    def selectFiles(self, displayLabel, settingSaveLoc=False, interLig=None):
+    def selectFiles(self, displayLabel, settingSaveLoc=False):
         '''Opens dialog to select one or more files and saves the list of
             files to the global variable selectedFileList'''
         validFiles = False
-        if not settingSaveLoc and self.type == self.ORCA:
+        if not settingSaveLoc:
             while not validFiles and self.cont:
                 # askopenfilenames() allows multiple files to be selected and returns a list of strings
                 self.selectedFileList = fd.askopenfilenames()
                 validFiles = self.checkFiles(self.selectedFileList)
+                print(validFiles)
+                print(self.selectedFileList)
                 if not validFiles:
-                    self.popup("At least one of the files selected is not a proper file. Please select files again.")
+                    self.popup("At least one of the files selected is not a '.gjf' file. Please select files again.")
                 elif len(self.selectedFileList) == 0:
                     validFiles = False
                     self.popup("You haven't selected any files")
             if validFiles:
                 displayStr = ", ".join(self.selectedFileList)
                 displayLabel['text'] = displayStr
-        elif not settingSaveLoc and self.type == self.GAUSSIAN:
-            if interLig == 'Inter':
-                self.interFile = fd.askopenfilename()
-                displayLabel['text'] = self.interFile
-            elif interLig == 'Lig':
-                self.ligFile = fd.askopenfilename()
-                displayLabel['text'] = self.ligFile
-        elif self.type == self.ORCA:
+        else:
             # ask directory to save the ORCA files to 
-            self.orcaSaveFileLoc = fd.askdirectory()
-            displayLabel['text'] = self.orcaSaveFileLoc
-            self.saveData()
-        elif self.type == self.GAUSSIAN:
-            # ask directory to save the Gaussian files to 
-            self.orcaSaveFileLoc = fd.askdirectory()
-            displayLabel['text'] = self.gausSaveFileLoc
+            self.saveFileLoc = fd.askdirectory()
+            displayLabel['text'] = self.saveFileLoc
             self.saveData()
 
 
@@ -249,41 +216,30 @@ class gaussianDataTool():
             orcaConverter = GaussianToOrca(data, atoms)
             orcaData = orcaConverter.translate()
             self.writeFile(self.nameFile(jobName), orcaData)
-
-
-    def convertToGaussian(self):
-        inputMerger = GaussianInputMerger(self.interFile, self.ligFile)
-        data = inputMerger.getOutputData()
-        interNameExt = self.interFile.split('/')[-1]
-        interName = interNameExt.split('.')[0]
-        ligNameExt = self.ligFile.split('/')[-1]
-        ligName = ligNameExt.split('.')[0]
-        name = f"{interName}_{ligName}.com"
-        self.writeFile(name, data)
+            
 
     def nameFile(self, aJobName):
         '''Names files based on used job name'''
-        if self.type == self.ORCA:
-            return aJobName + '_ORCA.inp'
+        return aJobName + '_ORCA.inp'
 
 
     def writeFile(self, aFile, aFileData):
-        if self.type == self.ORCA:
-            saveLoc = self.orcaSaveFileLoc
-        elif self.type == self.GAUSSIAN:
-            saveloc = self.gausSaveFileLoc
-        with open(self.orcaSaveFileLoc + '/' + aFile, 'w') as newFile:
+        with open(self.saveFileLoc + '/' + aFile, 'w') as newFile:
             for line in aFileData:
                 newFile.write(line + '\n')
-
+        
 
     def promptSaveLoc(self):
         '''Prompts new user to select a save location for created ORCA
-        input files to go'''
+            input files to go'''
+        borderWidth = 3
+        horizontalPad = 3
+        verticalPad = 3
+
         popup = tk.Tk()
-        promptText = f"Before getting started, select a directory where you'd like your {self.type} input files to go"
+        promptText = "Before getting started, select a directory where you'd like your ORCA input files to go"
         elements = list()
-        frame = ttk.Frame(master=popup, relief=tk.RAISED, borderwidth=self.BORDER_WIDTH)
+        frame = ttk.Frame(master=popup, relief=tk.RAISED, borderwidth=borderWidth)
         promptLabel = tk.Label(master=frame, text=promptText, padx=100, pady=5)
         elements.append(promptLabel)
         saveLocDisplay = tk.Label(master=frame, padx=100, pady=5)
@@ -296,7 +252,7 @@ class gaussianDataTool():
         row = 0
         col = 0
         for element in elements:
-            frame.grid(row=row, column=col, padx=self.HORIZONTAL_PAD, pady=self.VERTICAL_PAD)
+            frame.grid(row=row, column=col, padx=horizontalPad, pady=verticalPad)
             element.pack()
             row += 1
             
@@ -313,9 +269,13 @@ class gaussianDataTool():
             self.mainWindow.destroy()
             popup.destroy()
 
+        borderWidth = 3
+        horizontalPad = 3
+        verticalPad = 3
+
         popup = tk.Tk()
         elements = list()
-        frame = ttk.Frame(master=popup, relief=tk.RAISED, borderwidth=self.BORDER_WIDTH)
+        frame = ttk.Frame(master=popup, relief=tk.RAISED, borderwidth=borderWidth)
         promptLabel = tk.Label(master=frame, text=displayText, padx=100, pady=5)
         elements.append(promptLabel)
         contBtn = tk.Button(master=frame, text='Continue', command=lambda:popup.destroy())
@@ -326,18 +286,18 @@ class gaussianDataTool():
         row = 0
         col = 0
         for element in elements:
-            frame.grid(row=row, column=col, padx=self.HORIZONTAL_PAD, pady=self.VERTICAL_PAD)
+            frame.grid(row=row, column=col, padx=horizontalPad, pady=verticalPad)
             element.pack()
             row += 1
             
         popup.mainloop()
-
-
+        
+        
 def main():
     dataTool = gaussianDataTool()
-    dataTool.chooseProgram()
-
-
+    dataTool.createInterface()
+        
+        
 # Allows program to run as executable
 if __name__ == "__main__":
     main()

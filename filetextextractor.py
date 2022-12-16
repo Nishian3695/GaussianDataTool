@@ -15,6 +15,7 @@ class FileTextExtractor():
     def __init__(self, marker, fileReader):
         self.setMarker(marker)
         self._fileReader = fileReader
+        self.line = None
 
 
     def readLines(self, marker):
@@ -23,11 +24,11 @@ class FileTextExtractor():
             recorded will be returned as a list"""
         markerLen = len(marker)
         data = list()
-        line = self._fileReader.readline()
-        while line[:markerLen] != marker:
+        self.line = self._fileReader.readline()
+        while self.line[:markerLen] != marker:
             if self._recording:
-                data.append(line.strip())
-            line = self._fileReader.readline()
+                data.append(self.line.strip())
+            self.line = self._fileReader.readline()
         return data
 
 
@@ -85,3 +86,11 @@ class FileTextExtractor():
     def getFileReader(self):
         """Returns current file reader"""
         return self._fileReader
+
+
+    def nextLine(self):
+        self.line = self._fileReader.readline()
+
+        
+    def getCurLine(self):
+        return self.line
