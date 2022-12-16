@@ -3,10 +3,12 @@ import pickle # Save data as bytes to save space
 from tkinter import filedialog as fd # To browse and select files
 import tkinter as tk # To create graphical interface
 from tkinter import ttk # To create tabs in the interface
+from tkinter import messagebox
 from file_read_backwards import FileReadBackwards # Allows to read file backwards in memory-efficient way
 from filetextextractor import FileTextExtractor # To extract text from files
 from gaussiantoorca import GaussianToOrca # Translate Gaussian to ORCA file format
 from gaussianInputMerger import GaussianInputMerger # Translates .txt files for an interaction into Gaussian input
+
 
 class gaussianDataTool():
     GAUSSIAN = 'Gaussian'
@@ -31,10 +33,13 @@ class gaussianDataTool():
             checkPaths()
         else:
             self.loadData()
-        if self.newUser:
-            self.promptSaveLoc()
 
+    def onClose(self):
+        if tk.messagebox.askokcancel('Quit', 'Are you sure you want to quit?'):
+            self.cont = False
+            self.mainWindow.destroy()
 
+        
     def checkPaths(self):
         '''Checks if data path exists. If not, creates it'''
         programDir = self.PROGRAM_DATA.split('/')[0]
@@ -50,26 +55,31 @@ class gaussianDataTool():
     def checkIfNewUser(self):
         '''Checks if user is a new user based on if they selected
         a location to save their files for the program being used'''
-        if self.type == self.GAUSSIAN and self.gausSaveFileLoc == None:
-            self.newUser = True
-        elif self.type == self.ORCA and self.orcaSaveFileLoc == None:
-            self.newUser == True
+        if self.type == self.GAUSSIAN and self.gausSaveFileLoc == None or\
+           self.type == self.ORCA and self.orcaSaveFileLoc == None:
+            self.promptSaveLoc()
 
 
     def loadData(self):
         '''Loads previously-saved data from tool's data file'''
         loadList = pickle.load(open(self.PROGRAM_DATA, 'rb'))
         self.orcaSaveFileLoc = loadList[self.orcaSaveFileLocIdx]
-        # If no save file has been selected, new user
-        if self.orcaSaveFileLoc == None:
-            self.newUser = True
+        self.gausSaveFileLoc = loadList[self.gausSaveFileLocIdx]
 
 
     def saveData(self, saveLocation=None):
         '''Saves the save locations for the program'''
         saveList = [self.orcaSaveFileLoc, self.gausSaveFileLoc]
         pickle.dump(saveList, open(self.PROGRAM_DATA, 'wb'))
-   
+
+
+    def centerScreenCoor(self, window, winWidth, winHeight):
+        screenW = window.winfo_screenwidth()
+        screenH = window.winfo_screenheight()
+        x = (screenW / 2) - (winWidth / 2)
+        y = (screenH / 2) - (winHeight / 2)
+        return (winWidth, winHeight, x, y)
+
 
     def chooseProgram(self):
         '''Creates interface for the user to select whether they want
@@ -78,13 +88,17 @@ class gaussianDataTool():
         def startGausInput():
             self.type = self.GAUSSIAN
             window.destroy()
+            self.checkIfNewUser()
             self.createInterface()
         def startOrcaInput():
             self.type = self.ORCA
             window.destroy()
+            self.checkIfNewUser()
             self.createInterface()
         
         window = tk.Tk()
+        winWidth = 500
+        winHeight = 150
         frame = tk.Frame(master=window, relief=tk.RAISED, borderwidth=self.BORDER_WIDTH)
         displayStr = 'Please choose which files you want to make'
         disLabel = tk.Label(master=frame, text=displayStr, padx=100, pady=5)
@@ -96,12 +110,19 @@ class gaussianDataTool():
         orcaIn = tk.Button(master=frame, text='ORCA Input', command=lambda:startOrcaInput())
         frame.grid(row=1, column=3, padx=self.HORIZONTAL_PAD, pady=self.VERTICAL_PAD)
         orcaIn.pack()
-
+        
         window.mainloop()
 
 
     def createInterface(self):
-        """ Creates the main visual interface for the program """        
+        """ Creates the main visual interface for the program """
+        def start():
+            if self.type == GAUSSIAN:
+               convertToGaussian()
+            elif self.type == ORCA:
+                convertToOrca()
+            self.mainWindow.destroy()
+        
         self.mainWindow = tk.Tk()
         # Make multiple tabs
         tabManager = ttk.Notebook(self.mainWindow)
@@ -123,9 +144,9 @@ class gaussianDataTool():
             startButton = tk.Button(master=genFrame, text="Start", command=self.convertToOrca)
             genElements.append(startButton)
         elif self.type == self.GAUSSIAN:
-            interFileDisplay = tk.Label(master=genFrame, text='Amino acid file', padx=100, pady=5)
+            interFileDisplay = tk.Label(master=genFrame, text='Amino acid file(s)', padx=100, pady=5)
             genElements.append(interFileDisplay)
-            interFileBtn = tk.Button(master=genFrame, text='Select Amino Acid File', command=lambda:self.selectFiles(interFileDisplay, interLig='Inter'))
+            interFileBtn = tk.Button(master=genFrame, text='Select Amino Acid Files', command=lambda:self.selectFiles(interFileDisplay, interLig='Inter'))
             genElements.append(interFileBtn)
             ligFileDisplay = tk.Label(master=genFrame, text='Ligand file', padx=100, pady=5)
             genElements.append(ligFileDisplay)
@@ -165,6 +186,7 @@ class gaussianDataTool():
         tabManager.add(genFrame, text="General")
         tabManager.add(advFrame, text="Advanced")
         # Show main interface
+        self.mainWindow.protocol("WM_DELETE_WINDOW", self.onClose)        
         self.mainWindow.mainloop()
 
 
@@ -184,34 +206,38 @@ class gaussianDataTool():
             files to the global variable selectedFileList'''
         validFiles = False
         if not settingSaveLoc and self.type == self.ORCA:
-            while not validFiles and self.cont:
-                # askopenfilenames() allows multiple files to be selected and returns a list of strings
-                self.selectedFileList = fd.askopenfilenames()
-                validFiles = self.checkFiles(self.selectedFileList)
-                if not validFiles:
-                    self.popup("At least one of the files selected is not a proper file. Please select files again.")
-                elif len(self.selectedFileList) == 0:
-                    validFiles = False
-                    self.popup("You haven't selected any files")
-            if validFiles:
-                displayStr = ", ".join(self.selectedFileList)
+            # askopenfilenames() allows multiple files to be selected and returns a list of strings
+            self.selectedFileList = fd.askopenfilenames()
+            validFiles = self.checkFiles(self.selectedFileList)
+            if not validFiles:
+                messagebox.showerror('Incorrect File Type', 'At least one selected file is an improper type.')
+                displayLabel['text'] = 'Selected File(s)'
+            else:
+                displayList = list()
+                for file in self.selectedFileList:
+                    displayList.append(file.split('/')[-1])
+                displayStr = ", ".join(displayList)
                 displayLabel['text'] = displayStr
         elif not settingSaveLoc and self.type == self.GAUSSIAN:
             if interLig == 'Inter':
-                self.interFile = fd.askopenfilename()
-                displayLabel['text'] = self.interFile
+                self.interFiles = fd.askopenfilenames()
+                displayList = list()
+                for file in self.interFiles:
+                    displayList.append(file.split('/')[-1])
+                displayStr = ", ".join(displayList)
+                displayLabel['text'] = displayStr
             elif interLig == 'Lig':
                 self.ligFile = fd.askopenfilename()
-                displayLabel['text'] = self.ligFile
+                displayLabel['text'] = self.ligFile.split('/')[-1]
         elif self.type == self.ORCA:
             # ask directory to save the ORCA files to 
             self.orcaSaveFileLoc = fd.askdirectory()
-            displayLabel['text'] = self.orcaSaveFileLoc
+            displayLabel['text'] = self.orcaSaveFileLoc.split('/')[-1]
             self.saveData()
         elif self.type == self.GAUSSIAN:
             # ask directory to save the Gaussian files to 
-            self.orcaSaveFileLoc = fd.askdirectory()
-            displayLabel['text'] = self.gausSaveFileLoc
+            self.gausSaveFileLoc = fd.askdirectory()
+            displayLabel['text'] = self.gausSaveFileLoc.split('/')[-1]
             self.saveData()
 
 
@@ -249,17 +275,22 @@ class gaussianDataTool():
             orcaConverter = GaussianToOrca(data, atoms)
             orcaData = orcaConverter.translate()
             self.writeFile(self.nameFile(jobName), orcaData)
+        messagebox.showinfo('Done')
 
 
     def convertToGaussian(self):
-        inputMerger = GaussianInputMerger(self.interFile, self.ligFile)
-        data = inputMerger.getOutputData()
-        interNameExt = self.interFile.split('/')[-1]
-        interName = interNameExt.split('.')[0]
-        ligNameExt = self.ligFile.split('/')[-1]
-        ligName = ligNameExt.split('.')[0]
-        name = f"{interName}_{ligName}.com"
-        self.writeFile(name, data)
+        inputMerger = GaussianInputMerger(self.ligFile)
+        for file in self.interFiles:
+            inputMerger.setInterFile(file)
+            data = inputMerger.getOutputData()
+            interNameExt = file.split('/')[-1]
+            interName = interNameExt.split('.')[0]
+            ligNameExt = self.ligFile.split('/')[-1]
+            ligName = ligNameExt.split('.')[0]
+            name = f"{interName}_{ligName}.com"
+            self.writeFile(name, data)
+        messagebox.showinfo('Done')
+
 
     def nameFile(self, aJobName):
         '''Names files based on used job name'''
@@ -271,8 +302,8 @@ class gaussianDataTool():
         if self.type == self.ORCA:
             saveLoc = self.orcaSaveFileLoc
         elif self.type == self.GAUSSIAN:
-            saveloc = self.gausSaveFileLoc
-        with open(self.orcaSaveFileLoc + '/' + aFile, 'w') as newFile:
+            saveLoc = self.gausSaveFileLoc
+        with open(saveLoc + '/' + aFile, 'w') as newFile:
             for line in aFileData:
                 newFile.write(line + '\n')
 
@@ -280,6 +311,7 @@ class gaussianDataTool():
     def promptSaveLoc(self):
         '''Prompts new user to select a save location for created ORCA
         input files to go'''
+
         popup = tk.Tk()
         promptText = f"Before getting started, select a directory where you'd like your {self.type} input files to go"
         elements = list()
@@ -307,30 +339,9 @@ class gaussianDataTool():
         '''Creates a popup with the displayText'''
 
         def canc():
-            global mainWindow
-            global cont
             self.cont = False
             self.mainWindow.destroy()
             popup.destroy()
-
-        popup = tk.Tk()
-        elements = list()
-        frame = ttk.Frame(master=popup, relief=tk.RAISED, borderwidth=self.BORDER_WIDTH)
-        promptLabel = tk.Label(master=frame, text=displayText, padx=100, pady=5)
-        elements.append(promptLabel)
-        contBtn = tk.Button(master=frame, text='Continue', command=lambda:popup.destroy())
-        elements.append(contBtn)
-        cancBtn = tk.Button(master=frame, text='Cancel', command=lambda:canc())
-        elements.append(cancBtn)
-        # Add each element in order
-        row = 0
-        col = 0
-        for element in elements:
-            frame.grid(row=row, column=col, padx=self.HORIZONTAL_PAD, pady=self.VERTICAL_PAD)
-            element.pack()
-            row += 1
-            
-        popup.mainloop()
 
 
 def main():

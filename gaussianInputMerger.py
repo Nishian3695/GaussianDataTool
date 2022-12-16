@@ -2,9 +2,7 @@
 a single file, preparing it for input into Gaussian"""
 class GaussianInputMerger():
     method = "#P HF/6-31+G* Opt=ModRedundant NoSymm test"
-    def __init__(self, interFile, ligFile, method=method):
-        # File of the amino acid or non-ligand participant
-        self.interFile = interFile
+    def __init__(self, ligFile, method=method):
         # File of the ligand
         self.ligFile = ligFile
         # What method to use
@@ -34,12 +32,12 @@ class GaussianInputMerger():
                     line = next(lineIter)
                 # If first file add multiplicity. Else go to next line
                 if self.fileNum == 1:
-                    data.append(line)
+                    data.append(line.strip())
                 line = next(lineIter)
                 # Write atoms to new file until reaching newline
                 # (newline signifies end of atoms in GausView output)
                 while line[0] != '\n':
-                    data.append(line)
+                    data.append(line.strip())
                     # If not a hydrogen, a fixed atom, so add to fixedAtoms list
                     if line[1] != 'H':
                         self.fixedAtoms.append(self.atomCount)
@@ -48,13 +46,13 @@ class GaussianInputMerger():
                     
         #with open(newFile, 'w') as newF:
         data = list()
-        data.append(self.method + 2 * '\n')
-        data.append(newFile + 2 * '\n')
+        data.append(self.method + '\n')
+        data.append(newFile + '\n')
         writeAtoms(self.interFile)
         writeAtoms(self.ligFile)
-        data.append('\n')
+        data.append('')
         for fixedAtom in self.fixedAtoms:
-            data.append(str(fixedAtom) + ' F\n')
+            data.append(str(fixedAtom) + ' F')
 
         return data
 
