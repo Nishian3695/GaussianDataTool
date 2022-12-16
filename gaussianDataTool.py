@@ -5,9 +5,9 @@ import tkinter as tk # To create graphical interface
 from tkinter import ttk # To create tabs in the interface
 from tkinter import messagebox
 from file_read_backwards import FileReadBackwards # Allows to read file backwards in memory-efficient way
-from filetextextractor import FileTextExtractor # To extract text from files
-from gaussiantoorca import GaussianToOrca # Translate Gaussian to ORCA file format
-from gaussianInputMerger import GaussianInputMerger # Translates .txt files for an interaction into Gaussian input
+from GDTData.filetextextractor import FileTextExtractor # To extract text from files
+from GDTData.gaussiantoorca import GaussianToOrca # Translate Gaussian to ORCA file format
+from GDTData.gaussianInputMerger import GaussianInputMerger # Translates .txt files for an interaction into Gaussian input
 
 
 class gaussianDataTool():

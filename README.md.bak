@@ -2,7 +2,7 @@
 
 ***THIS TOOL IS STILL IN DEVELOPMENT. THERE MAY BE ISSUES, BUT IT WORKS PROPERLY WHEN USED AS OUTLINED HERE***
 
-**After downloading there will be a Python file named "gaussianDataTool." `Right-Click` it and create a shortcut so you may run the program from the Desktop**
+**After downloading there will be a gaussianDataTool exectuable. Right click it and create a shortcut to Desktop or other preferred location**
 
 ## Basics
 - This tool first prompts the user to create either Gaussian or ORCA input. Select whichever you desire.
