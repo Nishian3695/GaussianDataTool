@@ -30,9 +30,10 @@ class gaussianDataTool():
 
         # If program's data path doesn't exist, create it
         if not os.path.exists(self.PROGRAM_DATA):
-            checkPaths()
+            self.checkPaths()
         else:
             self.loadData()
+
 
     def onClose(self):
         if tk.messagebox.askokcancel('Quit', 'Are you sure you want to quit?'):
