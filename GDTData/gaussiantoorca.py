@@ -1,54 +1,65 @@
 class GaussianToOrca():
         
     # Constants for ORCA files
+    MON2CHARGEMUL = '* xyz 0 1'
     BEG_LINE1 = "! RIJK RI-B2PLYP D3BJ def2-QZVP def2/JK def2-QZVPP/C TIGHTSCF GRID5 FINALGRID6 PMODEL PAL2"
     BEG_LINE2 = "%maxcore 32000"
     BEG_LINE3 = '%base "dimer"'
     BEG_LINE4 = '%id "dimer"'
-    BEG_LINE5 = "* xyz 1 1" # is charge and multiplicity? if so, change
+    #BEG_LINE5 = "* xyz 1 1" # is charge and multiplicity? if so, change
     GHOST1_LINE1 = "*"
     GHOST1_LINE2 = "$new_job"
     GHOST1_LINE3 = BEG_LINE1
     GHOST1_LINE4 = BEG_LINE2
     GHOST1_LINE5 = '%base "monomer1_ghost"'
     GHOST1_LINE6 = '%id "monomer1_ghost"'
-    GHOST1_LINE7 = BEG_LINE5
+    GHOST1_LINE7 = MON2CHARGEMUL
     GHOST2_LINE1 = GHOST1_LINE1
     GHOST2_LINE2 = GHOST1_LINE2
     GHOST2_LINE3 = BEG_LINE1
     GHOST2_LINE4 = BEG_LINE2
     GHOST2_LINE5 = '%base "monomer2_ghost"'
     GHOST2_LINE6 = '%id "monomer2_ghost"'
-    GHOST2_LINE7 = '* xyz 0 1'
+    #GHOST2_LINE7 = '* xyz 0 1'
     MON1_LINE1 = GHOST1_LINE1
     MON1_LINE2 = GHOST1_LINE2
     MON1_LINE3 = BEG_LINE1
     MON1_LINE4 = BEG_LINE2
     MON1_LINE5 = '%base "monomer1"'
     MON1_LINE6 = '%id "monomer1"'
-    MON1_LINE7 = GHOST2_LINE7
+    #MON1_LINE7 = GHOST2_LINE7
     MON2_LINE1 = GHOST1_LINE1
     MON2_LINE2 = GHOST1_LINE2
     MON2_LINE3 = BEG_LINE1
     MON2_LINE4 = BEG_LINE2
     MON2_LINE5 = '%base "monomer2"'
     MON2_LINE6 = '%id "monomer2"'
-    MON2_LINE7 = BEG_LINE5
+    MON2_LINE7 = MON2CHARGEMUL
     END_LINE1 = GHOST1_LINE1
-    BEGLINES = [BEG_LINE1, BEG_LINE2, BEG_LINE3, BEG_LINE4, BEG_LINE5]
+    #BEGLINES = [BEG_LINE1, BEG_LINE2, BEG_LINE3, BEG_LINE4, BEG_LINE5]
+    BEGLINES = [BEG_LINE1, BEG_LINE2, BEG_LINE3, BEG_LINE4]
     GHOST1LINES = [GHOST1_LINE1, GHOST1_LINE2, GHOST1_LINE3, GHOST1_LINE4, GHOST1_LINE5, \
                    GHOST1_LINE6, GHOST1_LINE7]
+    #GHOST2LINES = [GHOST2_LINE1, GHOST2_LINE2, GHOST2_LINE3, GHOST2_LINE4, GHOST2_LINE5, \
+    #               GHOST2_LINE6, GHOST2_LINE7]
     GHOST2LINES = [GHOST2_LINE1, GHOST2_LINE2, GHOST2_LINE3, GHOST2_LINE4, GHOST2_LINE5, \
-                   GHOST2_LINE6, GHOST2_LINE7]
-    MON1LINES = [MON1_LINE1, MON1_LINE2, MON1_LINE3, MON1_LINE4, MON1_LINE5, MON1_LINE6, \
-                 MON1_LINE7]
+                   GHOST2_LINE6]
+    #MON1LINES = [MON1_LINE1, MON1_LINE2, MON1_LINE3, MON1_LINE4, MON1_LINE5, MON1_LINE6, \
+    #             MON1_LINE7]
+    MON1LINES = [MON1_LINE1, MON1_LINE2, MON1_LINE3, MON1_LINE4, MON1_LINE5, MON1_LINE6]
     MON2LINES = [MON2_LINE1, MON2_LINE2, MON2_LINE3, MON2_LINE4, MON2_LINE5, MON2_LINE6, \
                  MON2_LINE7]
     # END: Constants for ORCA files
 
-    def __init__(self, dataList, atomList):
+    def __init__(self, dataList, atomList, charge, multiplicity):
         self._data = dataList
         self._atoms = atomList
+        self._charge = charge
+        self._mul = multiplicity
+        chargeMul = f"* xyz {self._charge} {self._mul}"
+        self.BEGLINES.append(chargeMul)
+        self.GHOST2LINES.append(chargeMul)
+        self.MON1LINES.append(chargeMul)
 
 
     def findMon2Index(self):

@@ -39,12 +39,13 @@ class FileTextExtractor():
         self.readLines(marker)
 
         
-    def extractText(self, recording=False):
+    def extractText(self, recording=False, skipBeg=False):
         """Reads file up until FileTextExtractor's marker. After this point,
             data is recorded in a list (with lines in the .txt file being
             an element in the list) until but not including the end marker"""
         self._recording = recording
-        self.readLines(self._begMark)
+        if not skipBeg:
+            self.readLines(self._begMark)
         if not self._recording:
             self._recording = True
             extractedText = self.readLines(self._endMark)

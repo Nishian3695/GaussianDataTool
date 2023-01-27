@@ -260,12 +260,29 @@ class gaussianDataTool():
                 dataReversed = extractor.extractText()
                 data = list(reversed(dataReversed))
             with open(aFile, 'r') as file:
-                extractor = FileTextExtractor([atomMarker, endAtomMarker], file)
+                #extractor = FileTextExtractor([atomMarker, endAtomMarker], file)
+                extractor = FileTextExtractor(endAtomMarker, file)
                 extractor.passText(jobNameMarker)
                 for i in range(2):
                     extractor.nextLine()
                 jobName = extractor.getCurLine().strip()
-                atomLines = extractor.extractText()
+                # START New -- get charge and multiplicity
+                for i in range(3):
+                    extractor.nextLine()
+                charMul = extractor.getCurLine().strip().split(' ')
+                digits = 0
+                idx = 0
+                while digits < 2:
+                    if charMul[idx].isdigit():
+                        if digits == 0:
+                            digits += 1
+                            charge = charMul[idx]
+                        else:
+                            digits += 1
+                            mul = charMul[idx]
+                    idx += 1
+                # END New
+                atomLines = extractor.extractText(skipBeg=True)
             
             atoms = list()
             for aLine in atomLines:
@@ -273,7 +290,7 @@ class gaussianDataTool():
                     atomName = aLine[0]
                     atoms.append(atomName)
             # Change lines to ORCA input data
-            orcaConverter = GaussianToOrca(data, atoms)
+            orcaConverter = GaussianToOrca(data, atoms, charge, mul)
             orcaData = orcaConverter.translate()
             self.writeFile(self.nameFile(jobName), orcaData)
         messagebox.showinfo('Done')
